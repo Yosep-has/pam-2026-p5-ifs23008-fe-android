@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -37,7 +39,9 @@ import org.delcom.pam_p5_ifs18005.ui.components.BottomNavComponent
 import org.delcom.pam_p5_ifs18005.ui.components.LoadingUI
 import org.delcom.pam_p5_ifs18005.ui.components.StatusCard
 import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarComponent
+import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarMenuItem
 import org.delcom.pam_p5_ifs18005.ui.theme.DelcomTheme
+import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthActionUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthLogoutUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthViewModel
@@ -67,6 +71,11 @@ fun HomeScreen(
         authViewModel.loadTokenFromPreferences()
     }
 
+    fun onLogout(token: String){
+        isLoading = true
+        authViewModel.logout(token)
+    }
+
     LaunchedEffect(uiStateAuth.auth) {
         if (!isLoading) {
             return@LaunchedEffect
@@ -78,7 +87,7 @@ fun HomeScreen(
                     val dataToken = (uiStateAuth.auth as AuthUIState.Success).data
                     authViewModel.refreshToken(dataToken.authToken, dataToken.refreshToken)
                     isFreshToken = false
-                } else {
+                } else if(uiStateAuth.authRefreshToken is AuthActionUIState.Success) {
                     val newToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
                     if (authToken != newToken) {
                         authToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
@@ -86,7 +95,7 @@ fun HomeScreen(
                     isLoading = false
                 }
             } else {
-                authViewModel.logout("")
+                onLogout("")
             }
         }
     }
@@ -106,6 +115,22 @@ fun HomeScreen(
         return
     }
 
+    // Menu Top App Bar
+    val menuItems = listOf(
+        TopAppBarMenuItem(
+            text = "Profile",
+            icon = Icons.Filled.Person,
+            route = ConstHelper.RouteNames.Profile.path
+        ),
+        TopAppBarMenuItem(
+            text = "Logout",
+            icon = Icons.AutoMirrored.Filled.Logout,
+            route = null,
+            onClick = {
+                onLogout(authToken ?: "")
+            }
+        )
+    )
 
     Column(
         modifier = Modifier
@@ -113,7 +138,12 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Top App Bar
-        TopAppBarComponent(navController = navController, title = "Home", false)
+        TopAppBarComponent(
+            navController = navController,
+            title = "Home",
+            showBackButton = false,
+            customMenuItems = menuItems
+        )
         // Content
         Box(
             modifier = Modifier

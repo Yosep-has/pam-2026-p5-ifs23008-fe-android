@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,7 +45,9 @@ import org.delcom.pam_p5_ifs18005.network.todos.data.ResponseUserData
 import org.delcom.pam_p5_ifs18005.ui.components.BottomNavComponent
 import org.delcom.pam_p5_ifs18005.ui.components.LoadingUI
 import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarComponent
+import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarMenuItem
 import org.delcom.pam_p5_ifs18005.ui.theme.DelcomTheme
+import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthLogoutUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthViewModel
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.ProfileUIState
@@ -60,6 +65,7 @@ fun ProfileScreen(
 
     var isLoading by remember { mutableStateOf(false) }
     var profile by remember { mutableStateOf<ResponseUserData?>(null) }
+    var authToken by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -73,7 +79,7 @@ fun ProfileScreen(
             return@LaunchedEffect
         }
 
-        val authToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
+        authToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
 
         if(uiStateTodo.profile is ProfileUIState.Success){
             profile = (uiStateTodo.profile as ProfileUIState.Success).data
@@ -81,7 +87,7 @@ fun ProfileScreen(
             return@LaunchedEffect
         }
 
-        todoViewModel.getProfile(authToken)
+        todoViewModel.getProfile(authToken ?: "")
     }
 
     LaunchedEffect(uiStateTodo.profile) {
@@ -99,11 +105,43 @@ fun ProfileScreen(
         }
     }
 
+    fun onLogout(token: String){
+        isLoading = true
+        authViewModel.logout(token)
+    }
+
+    LaunchedEffect(uiStateAuth.authLogout) {
+        if (uiStateAuth.authLogout !is AuthLogoutUIState.Loading) {
+            RouteHelper.to(
+                navController,
+                ConstHelper.RouteNames.AuthLogin.path,
+                true
+            )
+        }
+    }
+
     // Tampilkan halaman loading
     if(isLoading || profile == null){
         LoadingUI()
         return
     }
+
+    // Menu Top App Bar
+    val menuItems = listOf(
+        TopAppBarMenuItem(
+            text = "Profile",
+            icon = Icons.Filled.Person,
+            route = ConstHelper.RouteNames.Profile.path
+        ),
+        TopAppBarMenuItem(
+            text = "Logout",
+            icon = Icons.AutoMirrored.Filled.Logout,
+            route = null,
+            onClick = {
+                onLogout(authToken ?: "")
+            }
+        )
+    )
 
     Column(
         modifier = Modifier
@@ -111,7 +149,13 @@ fun ProfileScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         // Top App Bar
-        TopAppBarComponent(navController = navController, title = "Profile", false)
+        TopAppBarComponent(
+            navController = navController,
+            title = "Profile",
+            showBackButton = false,
+            customMenuItems = menuItems
+        )
+
         // Content
         Box(
             modifier = Modifier

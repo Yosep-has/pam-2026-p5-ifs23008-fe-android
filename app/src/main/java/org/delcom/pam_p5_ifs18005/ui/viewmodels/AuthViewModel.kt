@@ -40,6 +40,7 @@ data class UIStateAuth(
     val auth: AuthUIState = AuthUIState.Loading,
     var authRegister: AuthActionUIState = AuthActionUIState.Loading,
     var authLogout: AuthLogoutUIState = AuthLogoutUIState.Loading,
+    var authRefreshToken: AuthActionUIState = AuthActionUIState.Loading,
 )
 
 @HiltViewModel
@@ -55,8 +56,7 @@ class AuthViewModel @Inject constructor(
         name: String,
         username: String,
         password: String,
-    )
-    {
+    ) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -95,8 +95,7 @@ class AuthViewModel @Inject constructor(
     fun login(
         username: String,
         password: String,
-    )
-    {
+    ) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
@@ -135,8 +134,7 @@ class AuthViewModel @Inject constructor(
 
     fun logout(
         authToken: String,
-    )
-    {
+    ) {
         viewModelScope.launch {
             authTokenPref.clearAuthToken()
             authTokenPref.clearRefreshToken()
@@ -175,37 +173,46 @@ class AuthViewModel @Inject constructor(
     fun refreshToken(
         authToken: String,
         refreshToken: String,
-    )
-    {
+    ) {
         viewModelScope.launch {
             _uiState.update {
                 it.copy(
-                    auth = AuthUIState.Loading
+                    auth = AuthUIState.Loading,
+                    authRefreshToken = AuthActionUIState.Loading
                 )
             }
             _uiState.update { it ->
-                val tmpState = runCatching {
-                    repository.postRefreshToken(RequestAuthRefreshToken(
-                        authToken = authToken,
-                        refreshToken = refreshToken,
-                    ))
+                var tmpStateAuth: AuthUIState = AuthUIState.Loading
+                var tmpStateAuthRefreshToken: AuthActionUIState = AuthActionUIState.Loading
+
+                runCatching {
+                    repository.postRefreshToken(
+                        RequestAuthRefreshToken(
+                            authToken = authToken,
+                            refreshToken = refreshToken,
+                        )
+                    )
                 }.fold(
                     onSuccess = {
                         if (it.status == "success") {
                             authTokenPref.saveAuthToken(it.data!!.authToken)
                             authTokenPref.saveRefreshToken(it.data.refreshToken)
-                            AuthUIState.Success(it.data)
+                            tmpStateAuth = AuthUIState.Success(it.data)
+                            tmpStateAuthRefreshToken = AuthActionUIState.Success(it.message)
                         } else {
-                            AuthUIState.Error(it.message)
+                            tmpStateAuth = AuthUIState.Error(it.message)
+                            tmpStateAuthRefreshToken = AuthActionUIState.Error(it.message)
                         }
                     },
                     onFailure = {
-                        AuthUIState.Error(it.message ?: "Unknown error")
+                        tmpStateAuth = AuthUIState.Error(it.message ?: "Unknown error")
+                        tmpStateAuthRefreshToken = AuthActionUIState.Error(it.message ?: "Unknown error")
                     }
                 )
 
                 it.copy(
-                    auth = tmpState
+                    auth = tmpStateAuth,
+                    authRefreshToken = tmpStateAuthRefreshToken
                 )
             }
         }
@@ -226,10 +233,12 @@ class AuthViewModel @Inject constructor(
                 val loginState = if (authToken.isNullOrEmpty() || refreshToken.isNullOrEmpty()) {
                     AuthUIState.Error("Token tidak tersedia")
                 } else {
-                    AuthUIState.Success(ResponseAuthLogin(
-                        authToken = authToken,
-                        refreshToken = refreshToken
-                    ))
+                    AuthUIState.Success(
+                        ResponseAuthLogin(
+                            authToken = authToken,
+                            refreshToken = refreshToken
+                        )
+                    )
                 }
 
                 it.copy(

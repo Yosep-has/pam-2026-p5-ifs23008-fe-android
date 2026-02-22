@@ -16,7 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FloatingActionButton
@@ -51,6 +53,8 @@ import org.delcom.pam_p5_ifs18005.network.todos.data.ResponseTodoData
 import org.delcom.pam_p5_ifs18005.ui.components.BottomNavComponent
 import org.delcom.pam_p5_ifs18005.ui.components.LoadingUI
 import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarComponent
+import org.delcom.pam_p5_ifs18005.ui.components.TopAppBarMenuItem
+import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthLogoutUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthUIState
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.AuthViewModel
 import org.delcom.pam_p5_ifs18005.ui.viewmodels.TodoViewModel
@@ -73,13 +77,14 @@ fun TodosScreen(
 
     // Muat data
     var todos by remember { mutableStateOf<List<ResponseTodoData>>(emptyList()) }
+    var authToken by remember { mutableStateOf<String?>(null) }
 
     fun fetchTodosData() {
         isLoading = true
 
-        val authToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
+        authToken = (uiStateAuth.auth as AuthUIState.Success).data.authToken
 
-        todoViewModel.getAllTodos(authToken, searchQuery.text)
+        todoViewModel.getAllTodos(authToken ?: "", searchQuery.text)
     }
 
     // Picu pengambilan data todos
@@ -111,11 +116,43 @@ fun TodosScreen(
         }
     }
 
+    fun onLogout(token: String){
+        isLoading = true
+        authViewModel.logout(token)
+    }
+
+    LaunchedEffect(uiStateAuth.authLogout) {
+        if (uiStateAuth.authLogout !is AuthLogoutUIState.Loading) {
+            RouteHelper.to(
+                navController,
+                ConstHelper.RouteNames.AuthLogin.path,
+                true
+            )
+        }
+    }
+
     // Tampilkan halaman loading
     if (isLoading) {
         LoadingUI()
         return
     }
+
+    // Menu Top App Bar
+    val menuItems = listOf(
+        TopAppBarMenuItem(
+            text = "Profile",
+            icon = Icons.Filled.Person,
+            route = ConstHelper.RouteNames.Profile.path
+        ),
+        TopAppBarMenuItem(
+            text = "Logout",
+            icon = Icons.AutoMirrored.Filled.Logout,
+            route = null,
+            onClick = {
+                onLogout(authToken ?: "")
+            }
+        )
+    )
 
     fun onOpen(todoId: String) {
         RouteHelper.to(
@@ -132,7 +169,9 @@ fun TodosScreen(
         // Top App Bar
         TopAppBarComponent(
             navController = navController,
-            title = "Todos", showBackButton = false,
+            title = "Todos",
+            showBackButton = false,
+            customMenuItems = menuItems,
             withSearch = true,
             searchQuery = searchQuery,
             onSearchQueryChange = { query ->
