@@ -115,6 +115,7 @@ fun TodosEditScreen(
         title: String,
         description: String,
         isDone: Boolean,
+        urgency: String,
     ) {
         isLoading = true
 
@@ -123,7 +124,8 @@ fun TodosEditScreen(
             todoId = todoId,
             title = title,
             description = description,
-            isDone = isDone
+            isDone = isDone,
+            urgency = urgency,
         )
     }
 
@@ -198,6 +200,7 @@ fun TodosEditUI(
         String,
         String,
         Boolean,
+        String,
     ) -> Unit
 ) {
     val alertState = remember { mutableStateOf(AlertState()) }
@@ -205,6 +208,7 @@ fun TodosEditUI(
     var dataTitle by remember { mutableStateOf(todo.title) }
     var dataDescription by remember { mutableStateOf(todo.description) }
     var dataIsDone by remember { mutableStateOf(todo.isDone) }
+    var dataUrgency by remember { mutableStateOf(todo.urgency) }
 
     Column(
         modifier = Modifier
@@ -213,7 +217,7 @@ fun TodosEditUI(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Nama
+        // Title
         OutlinedTextField(
             value = dataTitle,
             onValueChange = { dataTitle = it },
@@ -224,45 +228,46 @@ fun TodosEditUI(
                 cursorColor = MaterialTheme.colorScheme.primaryContainer,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ),
-            label = {
-                Text(
-                    text = "Title",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Done
-            ),
+            label = { Text(text = "Title", color = MaterialTheme.colorScheme.onPrimaryContainer) },
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
         )
 
         // Is Done
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                text = "Is Done?",
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = dataIsDone,
-                    onClick = { dataIsDone = true }
-                )
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Is Done?", color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RadioButton(selected = dataIsDone, onClick = { dataIsDone = true })
                 Text("Yes")
-
                 Spacer(modifier = Modifier.width(16.dp))
-
-                RadioButton(
-                    selected = !dataIsDone,
-                    onClick = { dataIsDone = false }
-                )
+                RadioButton(selected = !dataIsDone, onClick = { dataIsDone = false })
                 Text("No")
+            }
+        }
+
+        // Urgency selector
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(text = "Urgensi", color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(6.dp))
+            Row {
+                listOf("Low", "Medium", "High").forEach { level ->
+                    val bgColor = when (level) {
+                        "High"   -> androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                        "Medium" -> androidx.compose.ui.graphics.Color(0xFFF57C00)
+                        else     -> androidx.compose.ui.graphics.Color(0xFF388E3C)
+                    }
+                    androidx.compose.material3.FilterChip(
+                        selected = dataUrgency == level,
+                        onClick = { dataUrgency = level },
+                        label = { Text(level) },
+                        modifier = Modifier.padding(end = 8.dp),
+                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = bgColor,
+                            selectedLabelColor = androidx.compose.ui.graphics.Color.White
+                        )
+                    )
+                }
             }
         }
 
@@ -277,19 +282,9 @@ fun TodosEditUI(
                 cursorColor = MaterialTheme.colorScheme.primaryContainer,
                 unfocusedBorderColor = MaterialTheme.colorScheme.onPrimaryContainer,
             ),
-            label = {
-                Text(
-                    text = "Deskripsi",
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Done
-            ),
+            label = { Text(text = "Deskripsi", color = MaterialTheme.colorScheme.onPrimaryContainer) },
+            modifier = Modifier.fillMaxWidth().height(120.dp),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Done),
             maxLines = 5,
             minLines = 3
         )
@@ -297,70 +292,34 @@ fun TodosEditUI(
         Spacer(modifier = Modifier.height(64.dp))
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Floating Action Button
+    Box(modifier = Modifier.fillMaxSize()) {
         FloatingActionButton(
             onClick = {
                 if (dataTitle.isEmpty()) {
-                    AlertHelper.show(
-                        alertState,
-                        AlertType.ERROR,
-                        "Judul tidak boleh kosong!"
-                    )
+                    AlertHelper.show(alertState, AlertType.ERROR, "Judul tidak boleh kosong!")
                     return@FloatingActionButton
                 }
-
                 if (dataDescription.isEmpty()) {
-                    AlertHelper.show(
-                        alertState,
-                        AlertType.ERROR,
-                        "Deskripsi tidak boleh kosong!"
-                    )
+                    AlertHelper.show(alertState, AlertType.ERROR, "Deskripsi tidak boleh kosong!")
                     return@FloatingActionButton
                 }
-
-                onSave(
-                    dataTitle,
-                    dataDescription,
-                    dataIsDone
-                )
+                onSave(dataTitle, dataDescription, dataIsDone, dataUrgency)
             },
-            modifier = Modifier
-                .align(Alignment.BottomEnd) // pojok kanan bawah
-                .padding(16.dp) // jarak dari tepi
-            ,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
-            Icon(
-                imageVector = Icons.Default.Save,
-                contentDescription = "Simpan Data"
-            )
+            Icon(imageVector = Icons.Default.Save, contentDescription = "Simpan Data")
         }
     }
 
     if (alertState.value.isVisible) {
         AlertDialog(
-            onDismissRequest = {
-                AlertHelper.dismiss(alertState)
-            },
-            title = {
-                Text(alertState.value.type.title)
-            },
-            text = {
-                Text(alertState.value.message)
-            },
+            onDismissRequest = { AlertHelper.dismiss(alertState) },
+            title = { Text(alertState.value.type.title) },
+            text = { Text(alertState.value.message) },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        AlertHelper.dismiss(alertState)
-                    }
-                ) {
-                    Text("OK")
-                }
+                TextButton(onClick = { AlertHelper.dismiss(alertState) }) { Text("OK") }
             }
         )
     }
@@ -368,11 +327,4 @@ fun TodosEditUI(
 
 @Preview(showBackground = true, name = "Light Mode")
 @Composable
-fun PreviewTodosEditUI() {
-//    DelcomTheme {
-//        TodosEditUI(
-//            todos = DummyData.getTodosEditData(),
-//            onOpen = {}
-//        )
-//    }
-}
+fun PreviewTodosEditUI() {}

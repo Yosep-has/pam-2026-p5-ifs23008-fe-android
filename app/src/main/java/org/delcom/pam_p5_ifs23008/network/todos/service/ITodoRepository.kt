@@ -13,41 +13,89 @@ import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseAuthLogin
 import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseAuthRegister
 import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseTodo
 import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseTodoAdd
-import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseTodoStats
 import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseTodos
 import org.delcom.pam_p5_ifs23008.network.todos.data.ResponseUser
 
 interface ITodoRepository {
 
-    // ── Auth ──────────────────────────────────────────────────────────────────
+    // ----------------------------------
+    // Auth
+    // ----------------------------------
 
-    suspend fun postRegister(request: RequestAuthRegister): ResponseMessage<ResponseAuthRegister?>
-    suspend fun postLogin(request: RequestAuthLogin): ResponseMessage<ResponseAuthLogin?>
-    suspend fun postLogout(request: RequestAuthLogout): ResponseMessage<String?>
-    suspend fun postRefreshToken(request: RequestAuthRefreshToken): ResponseMessage<ResponseAuthLogin?>
+    suspend fun postRegister(
+        request: RequestAuthRegister
+    ): ResponseMessage<ResponseAuthRegister?>
 
-    // ── Users ─────────────────────────────────────────────────────────────────
+    suspend fun postLogin(
+        request: RequestAuthLogin
+    ): ResponseMessage<ResponseAuthLogin?>
 
-    suspend fun getUserMe(authToken: String): ResponseMessage<ResponseUser?>
-    suspend fun putUserMe(authToken: String, request: RequestUserChange): ResponseMessage<String?>
-    suspend fun putUserMePassword(authToken: String, request: RequestUserChangePassword): ResponseMessage<String?>
-    suspend fun putUserMePhoto(authToken: String, file: MultipartBody.Part): ResponseMessage<String?>
+    suspend fun postLogout(
+        request: RequestAuthLogout
+    ): ResponseMessage<String?>
 
-    // ── Todos ─────────────────────────────────────────────────────────────────
+    suspend fun postRefreshToken(
+        request: RequestAuthRefreshToken
+    ): ResponseMessage<ResponseAuthLogin?>
 
-    suspend fun getTodoStats(authToken: String): ResponseMessage<ResponseTodoStats?>
+    // ----------------------------------
+    // Users
+    // ----------------------------------
+
+    suspend fun getUserMe(
+        authToken: String
+    ): ResponseMessage<ResponseUser?>
+
+    suspend fun putUserMe(
+        authToken: String,
+        request: RequestUserChange
+    ): ResponseMessage<String?>
+
+    suspend fun putUserMePassword(
+        authToken: String,
+        request: RequestUserChangePassword
+    ): ResponseMessage<String?>
+
+    suspend fun putUserMePhoto(
+        authToken: String,
+        file: MultipartBody.Part
+    ): ResponseMessage<String?>
+
+    // ----------------------------------
+    // Todos
+    // ----------------------------------
 
     suspend fun getTodos(
         authToken: String,
         search: String? = null,
         isDone: String? = null,
-        page: Int = 1,
-        perPage: Int = 10,
+        urgency: String? = null,
     ): ResponseMessage<ResponseTodos?>
 
-    suspend fun postTodo(authToken: String, request: RequestTodo): ResponseMessage<ResponseTodoAdd?>
-    suspend fun getTodoById(authToken: String, todoId: String): ResponseMessage<ResponseTodo?>
-    suspend fun putTodo(authToken: String, todoId: String, request: RequestTodo): ResponseMessage<String?>
-    suspend fun putTodoCover(authToken: String, todoId: String, file: MultipartBody.Part): ResponseMessage<String?>
-    suspend fun deleteTodo(authToken: String, todoId: String): ResponseMessage<String?>
+    suspend fun postTodo(
+        authToken: String,
+        request: RequestTodo
+    ): ResponseMessage<ResponseTodoAdd?>
+
+    suspend fun getTodoById(
+        authToken: String,
+        todoId: String
+    ): ResponseMessage<ResponseTodo?>
+
+    suspend fun putTodo(
+        authToken: String,
+        todoId: String,
+        request: RequestTodo
+    ): ResponseMessage<String?>
+
+    suspend fun putTodoCover(
+        authToken: String,
+        todoId: String,
+        file: MultipartBody.Part
+    ): ResponseMessage<String?>
+
+    suspend fun deleteTodo(
+        authToken: String,
+        todoId: String
+    ): ResponseMessage<String?>
 }

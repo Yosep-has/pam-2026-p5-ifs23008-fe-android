@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class RequestTodo (
     val title: String,
     val description: String,
-    val isDone: Boolean = false
+    val isDone: Boolean = false,
+    val urgency: String = "Low"    // Low | Medium | High
 )

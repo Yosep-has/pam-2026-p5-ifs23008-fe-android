@@ -88,6 +88,7 @@ fun TodosAddScreen(
     fun onSave(
         title: String,
         description: String,
+        urgency: String,
     ) {
         if(authToken.value == null){
             return
@@ -104,6 +105,7 @@ fun TodosAddScreen(
             authToken = authToken.value!!,
             title = title,
             description = description,
+            urgency = urgency,
         )
     }
 
@@ -171,13 +173,15 @@ fun TodosAddUI(
     tmpTodo: ResponseTodoData?,
     onSave: (
         String,
-        String
+        String,
+        String,
     ) -> Unit
 ) {
     val alertState = remember { mutableStateOf(AlertState()) }
 
     var dataTitle by remember { mutableStateOf(tmpTodo?.title ?: "") }
     var dataDescription by remember { mutableStateOf(tmpTodo?.description ?: "") }
+    var dataUrgency by remember { mutableStateOf("Low") }
 
     Column(
         modifier = Modifier
@@ -203,13 +207,41 @@ fun TodosAddUI(
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             },
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Done
             ),
         )
+
+        // Urgency selector
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = "Urgensi",
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(6.dp))
+            Row {
+                listOf("Low", "Medium", "High").forEach { level ->
+                    val bgColor = when (level) {
+                        "High"   -> androidx.compose.ui.graphics.Color(0xFFD32F2F)
+                        "Medium" -> androidx.compose.ui.graphics.Color(0xFFF57C00)
+                        else     -> androidx.compose.ui.graphics.Color(0xFF388E3C)
+                    }
+                    androidx.compose.material3.FilterChip(
+                        selected = dataUrgency == level,
+                        onClick = { dataUrgency = level },
+                        label = { Text(level) },
+                        modifier = Modifier.padding(end = 8.dp),
+                        colors = androidx.compose.material3.FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = bgColor,
+                            selectedLabelColor = androidx.compose.ui.graphics.Color.White
+                        )
+                    )
+                }
+            }
+        }
 
         // Description
         OutlinedTextField(
@@ -242,69 +274,34 @@ fun TodosAddUI(
         Spacer(modifier = Modifier.height(64.dp))
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        // Floating Action Button
+    Box(modifier = Modifier.fillMaxSize()) {
         FloatingActionButton(
             onClick = {
                 if(dataTitle.isEmpty()) {
-                    AlertHelper.show(
-                        alertState,
-                        AlertType.ERROR,
-                        "Judul tidak boleh kosong!"
-                    )
+                    AlertHelper.show(alertState, AlertType.ERROR, "Judul tidak boleh kosong!")
                     return@FloatingActionButton
                 }
-
                 if(dataDescription.isEmpty()) {
-                    AlertHelper.show(
-                        alertState,
-                        AlertType.ERROR,
-                        "Deskripsi tidak boleh kosong!"
-                    )
+                    AlertHelper.show(alertState, AlertType.ERROR, "Deskripsi tidak boleh kosong!")
                     return@FloatingActionButton
                 }
-
-                onSave(
-                    dataTitle,
-                    dataDescription
-                )
+                onSave(dataTitle, dataDescription, dataUrgency)
             },
-            modifier = Modifier
-                .align(Alignment.BottomEnd) // pojok kanan bawah
-                .padding(16.dp) // jarak dari tepi
-            ,
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary
         ) {
-            Icon(
-                imageVector = Icons.Default.Save,
-                contentDescription = "Simpan Data"
-            )
+            Icon(imageVector = Icons.Default.Save, contentDescription = "Simpan Data")
         }
     }
 
     if (alertState.value.isVisible) {
         AlertDialog(
-            onDismissRequest = {
-                AlertHelper.dismiss(alertState)
-            },
-            title = {
-                Text(alertState.value.type.title)
-            },
-            text = {
-                Text(alertState.value.message)
-            },
+            onDismissRequest = { AlertHelper.dismiss(alertState) },
+            title = { Text(alertState.value.type.title) },
+            text = { Text(alertState.value.message) },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        AlertHelper.dismiss(alertState)
-                    }
-                ) {
-                    Text("OK")
-                }
+                TextButton(onClick = { AlertHelper.dismiss(alertState) }) { Text("OK") }
             }
         )
     }
@@ -312,11 +309,4 @@ fun TodosAddUI(
 
 @Preview(showBackground = true, name = "Light Mode")
 @Composable
-fun PreviewTodosAddUI() {
-//    DelcomTheme {
-//        TodosAddUI(
-//            todos = DummyData.getTodosAddData(),
-//            onOpen = {}
-//        )
-//    }
-}
+fun PreviewTodosAddUI() {}
